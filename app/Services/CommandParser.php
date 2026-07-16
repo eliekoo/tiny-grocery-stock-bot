@@ -19,6 +19,18 @@ class CommandParser
 
         $action = null;
 
+        if (
+            $text === 'list'
+            || $text === 'stock'
+        ) {
+
+            return [
+                'action' => 'LIST',
+                'keyword' => null,
+                'quantity' => null,
+            ];
+        }
+
 
         if (
             str_starts_with($text, 'add ')

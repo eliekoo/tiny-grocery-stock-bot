@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Log;
 use App\Services\TelegramService;
 use App\Services\CommandParser;
 use App\Services\InventoryService;
+use App\Services\InventoryFormatterService;
 
 class TelegramController extends Controller
 {
@@ -14,7 +15,8 @@ class TelegramController extends Controller
     public function __construct(
         protected TelegramService $telegram,
         protected CommandParser $parser,
-        protected InventoryService $inventory
+        protected InventoryService $inventory,
+        protected InventoryFormatterService $formatter
     ) {}
 
 
@@ -72,6 +74,15 @@ class TelegramController extends Controller
 
     private function handleCommand(array $command): string
     {
+        if ($command['action'] === 'LIST') {
+
+            $items = $this->inventory
+                ->listInventory();
+
+
+            return $this->formatter
+                ->formatList($items);
+        }
 
         if ($command['action'] === 'UNKNOWN') {
 

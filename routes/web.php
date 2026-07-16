@@ -114,3 +114,9 @@ Route::get('/test-parser', function () {
 
     ];
 });
+
+Route::get('/test-command-list', function () {
+
+    return app(\App\Services\CommandParser::class)
+        ->parse('/list');
+});
