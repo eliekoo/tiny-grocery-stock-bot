@@ -16,10 +16,10 @@ class Product extends Model
         'is_active',
     ];
 
-    public function category()
-    {
-        return $this->belongsTo(Category::class);
-    }
+    // public function category()
+    // {
+    //     return $this->belongsTo(Category::class);
+    // }
 
     public function variants()
     {

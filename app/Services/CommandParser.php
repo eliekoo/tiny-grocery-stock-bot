@@ -6,24 +6,15 @@ class CommandParser
 {
     public function parse(string $text): array
     {
-        $text = trim(
-            mb_strtolower($text)
-        );
+        $text = trim(mb_strtolower($text));
 
+        /*
+    |--------------------------------------------------------------------------
+    | Telegram Keyboard Buttons
+    |--------------------------------------------------------------------------
+    */
 
-        // remove telegram command /
-        $text = ltrim($text, '/');
-
-
-        // detect action by command
-
-        $action = null;
-
-        if (
-            $text === 'list'
-            || $text === 'stock'
-        ) {
-
+        if ($text === '📦 stock list') {
             return [
                 'action' => 'LIST',
                 'keyword' => null,
@@ -31,83 +22,124 @@ class CommandParser
             ];
         }
 
-
-        if (
-            str_starts_with($text, 'add ')
-            || str_starts_with($text, 'a ')
-        ) {
-
-            $action = 'ADD';
-        } elseif (
-            str_starts_with($text, 'use ')
-            || str_starts_with($text, 'u ')
-        ) {
-
-            $action = 'USE';
+        if ($text === '➕ add stock') {
+            return [
+                'action' => 'ADD_MODE',
+                'keyword' => null,
+                'quantity' => null,
+            ];
         }
 
+        if ($text === '➖ use stock') {
+            return [
+                'action' => 'USE_MODE',
+                'keyword' => null,
+                'quantity' => null,
+            ];
+        }
 
-        // Natural format:
-        // lotus milk +6
-        // drypers -1
+        if ($text === '❓ help') {
+            return [
+                'action' => 'HELP',
+                'keyword' => null,
+                'quantity' => null,
+            ];
+        }
 
-        preg_match(
-            '/(.+)\s([+-]\d+)$/',
-            $text,
-            $matches
-        );
+        /*
+    |--------------------------------------------------------------------------
+    | Remove leading "/"
+    |--------------------------------------------------------------------------
+    */
 
+        $text = ltrim($text, '/');
 
-        if (!$action && $matches) {
+        /*
+    |--------------------------------------------------------------------------
+    | Simple Commands
+    |--------------------------------------------------------------------------
+    */
+
+        if (in_array($text, ['list', 'stock'])) {
+            return [
+                'action' => 'LIST',
+                'keyword' => null,
+                'quantity' => null,
+            ];
+        }
+
+        /*
+    |--------------------------------------------------------------------------
+    | Natural Language
+    |--------------------------------------------------------------------------
+    |
+    | milk +2
+    | milk -2
+    | milk =20
+    |
+    */
+
+        if (preg_match('/^(.+?)\s*([+\-=])\s*(\d+(?:\.\d+)?)$/', $text, $matches)) {
 
             $keyword = trim($matches[1]);
-
-            $quantity = (int) $matches[2];
-
+            $operator = $matches[2];
+            $quantity = (float) $matches[3];
 
             return [
-                'action' => $quantity > 0
-                    ? 'ADD'
-                    : 'USE',
-
+                'action' => match ($operator) {
+                    '+' => 'ADD',
+                    '-' => 'USE',
+                    '=' => 'ADJUST',
+                },
                 'keyword' => $keyword,
-
-                'quantity' => abs($quantity),
+                'quantity' => $quantity,
             ];
         }
 
+        /*
+    |--------------------------------------------------------------------------
+    | /add milk 2
+    | /use milk 1
+    | /adjust milk 20
+    |--------------------------------------------------------------------------
+    */
 
-        if ($action) {
+        $parts = explode(' ', $text);
 
-            $parts = explode(
-                ' ',
-                $text
-            );
+        $command = array_shift($parts);
 
+        if (in_array($command, ['add', 'a'])) {
 
-            // remove command
-            array_shift($parts);
-
-
-            $quantity = array_pop($parts);
-
+            $quantity = (float) array_pop($parts);
 
             return [
-
-                'action' => $action,
-
-                'keyword' => implode(
-                    ' ',
-                    $parts
-                ),
-
-                'quantity' => abs(
-                    (int) $quantity
-                ),
-
+                'action' => 'ADD',
+                'keyword' => implode(' ', $parts),
+                'quantity' => $quantity,
             ];
         }
 
+        if (in_array($command, ['use', 'u'])) {
+
+            $quantity = (float) array_pop($parts);
+
+            return [
+                'action' => 'USE',
+                'keyword' => implode(' ', $parts),
+                'quantity' => $quantity,
+            ];
+        }
+
+        if (in_array($command, ['adjust', 'adj'])) {
+
+            $quantity = (float) array_pop($parts);
+
+            return [
+                'action' => 'ADJUST',
+                'keyword' => implode(' ', $parts),
+                'quantity' => $quantity,
+            ];
+        }
 
         return [
             'action' => 'UNKNOWN',
